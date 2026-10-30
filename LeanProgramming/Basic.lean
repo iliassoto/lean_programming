@@ -1,5 +1,5 @@
 --Hello World in Editor
-#eval 5 + 11
+#eval 5 + 15
 #eval String.append "Hello " "World"
 #eval String.append "it is " (if 5<3 then "yes" else "no")
 
@@ -9,7 +9,7 @@
 #eval 1-2 --Returns 0, as Nat is always positive
 #eval (1-2 : Nat) --Returns 0, as Nat is always positive
 #eval (1-2 : Int) --Returns -1
-#check (1-2) --tells us the type!
+#check (1-5) --tells us the type!
 
 
 --Functions
@@ -69,3 +69,184 @@ structure Book where
   author : String
 
 def book1 := Book.makeBook "Harry Potter" "JK Rowling"
+
+-- Datatypes and Patterns.
+/-
+Product types (==complex data types) such as structures cannot represent everything in an easy manner.
+Many applications may require a data structure with an arbitrary number of elements (e.g. a tree).
+Datatypes that can include instances of themselves are called recursive datatypes,
+while datatypes that allow choices (i.e. have more than one constructor) are called sum types.
+Recursive + Sum types are called inductive datatypes, because we can use induction to prove statements
+about them.
+
+Inductive datatypes are close to writing an abstract class with two concrete classes in Scala or Java.
+Instead of writing
+
+abstract class Bool {}
+class True extends Bool {}
+class False extends Bool {}
+
+we can write:
+-/
+inductive Bool2 where --cannot use the actual names, as they already exist.
+ | false2 : Bool2 --constructor nr 1
+ | true2 : Bool2 --constructor nr 2
+
+
+inductive Nat2 where
+  | zero2 : Nat2
+  | succ2 (n : Nat2) : Nat2 --second constructor takes an argument
+
+def three2: Nat2 := Nat2.succ2 (Nat2.succ2 (Nat2.succ2 Nat2.zero2))
+-- The main difference is that here we only have one type with many constructors of one type,
+--while in Java we have many types.
+
+--Pattern matching
+def isZero (n : Nat2) : Bool2 :=
+  match n with
+  | Nat2.zero2 => Bool2.true2
+  | Nat2.succ2 k => Bool2.false2
+
+-- Lean identifies recursive functions that won't finish, e.g.
+def evenLoops (n : Nat) : Bool :=
+  match n with
+  | Nat.zero => true
+  | Nat.succ k => not (evenLoops n) --calls evenLoops with the same n.
+
+--Polymorphism
+-- Just as Lean uses a space to pass an argument into a function, it also uses a space
+-- to pass an argument to a type. E.g. a List of Strings is:
+def myList: List String := ["hello", "world"]
+
+-- A polymorphic version of a Ppoint<T> is:
+structure PPoint (T : Type) where
+  x: T
+  y: T
+
+--normally written with greek letters:
+structure PPoint2 ( α : Type) where
+  x: α
+  y: α
+
+
+def natOrigin : PPoint Nat :=
+  {x:= Nat.zero, y:= 0}
+
+--the following function replaces the value of x of a PPOint with a value of type alpha
+-- see how definitions may also be ploymorphic,
+def replaceX (α : Type) (point : PPoint α) (newX : α) : PPoint α :=
+  { point with x := newX }
+
+#eval replaceX Nat natOrigin 5 --PPoint with x = 5.
+
+
+/-
+Implicit arguments are declared by wrapping them in curly braces instead
+of parentheses when defining a function.
+-/
+
+def replaceY {α : Type} (point: PPoint α) (newY : α) : PPoint α :=
+  {point with y := newY}
+
+#eval replaceY natOrigin 3
+
+
+def listLenght {T : Type} (xs: List T) : Nat :=
+match xs with
+| [] => 0
+| _ :: ys => 1 + (listLenght ys)
+
+#eval listLenght [2,3,45]
+#eval [1,2,34].length --already part of the standard library
+
+-- Further built-in datatypes (besides List):
+
+--Option is used as follows.
+def List.getHead {T : Type} (xs: List T): Option T :=
+  match xs with
+  | [] => none
+  | y :: _ => some y
+
+/-
+Some naming convetions:
+def List.head? --> method will return an Option (as above) (in Scala: list.get(0))
+def List.head! --> Method fails if nothing found  (in Scala list(0))
+def List.headD --> MEthod returns the provided default argument (in Scala list.getOrElse(0, 5))
+-/
+
+#eval [].head? -- fails, as the type of the list couldn't be determined by the compiler
+#eval [].head? (α := Int) --explicitly provide type hint for empty list
+#eval ([] : List Int).head? --easier...
+
+
+/-
+The Prod structure (Product) is a generic way of joining two values together. For instance,
+a Prod Nat String contains a Nat and a String. It is very much like a 2-tuple. We could also
+all it a Pair instead of a Product.
+The Type Prod is typically written α × β:
+-/
+
+def fives1 : String × Int := {fst:= "five", snd:=5} --write times to get this sign.
+def fives2 : String × Int := ("five", 5) --special notation for Prod Types.
+def fives3 : Prod String Int := ("five", 5) --old-school way as we've learned before.
+def fives4 : String × Int × Nat := ("five", 7, 4+3) --three elements, works because:
+def fives5 : String × (Int × Nat) := ("five", (7, 4+3)) --this is what happens in the background (right associative)
+
+
+/-
+The Unit datatype has one argumentless constructor as it describes only a single value.
+
+The Sum datatype is a generic way of allowing a choice between values of different types.
+For example, a Sum String Int is either a String or an Int. Only use when writing very generic code,
+otherwise use use inductive types. See example in book.
+-/
+
+def PetName : Type := String ⊕ String --write oplus to get this sign. a PetName can be a name of dogs or a name of cats.
+
+def animals : List PetName :=
+  [Sum.inl "Spot", Sum.inr "Tiger", Sum.inl "Fifi",
+   Sum.inl "Rex", Sum.inr "Floof"]
+
+def howManyDogs (pets : List PetName) : Nat :=
+  match pets with
+  | [] => 0
+  | Sum.inl _ :: morePets => howManyDogs morePets + 1
+  | Sum.inr _ :: morePets => howManyDogs morePets
+
+
+/-
+Exercises on Polymorphism
+-/
+
+--function that finds last entry of list
+def lastEntry {a: Type} (xs: List a) :=
+  match xs with
+  | List.nil => none
+  | y :: List.nil => some y
+  | _ :: ys => lastEntry ys
+
+--Find first entry that satisfies a given predicate
+def List.findFirst? {α : Type} (xs : List α) (predicate : α → Bool) : Option α :=
+  match xs with
+  | [] => none
+  | x :: xs => if predicate x then some x else List.findFirst? xs predicate
+
+
+def Prod.switch {α β : Type} (pair : α × β) : β × α := (pair.snd, pair.fst)
+
+def zip {α β : Type} (xs : List α) (ys : List β) : List (α × β) :=
+  match xs, ys with
+  | [], _ | _, [] => []
+  | x::xss, y::yss => (x, y) :: zip xss yss
+
+
+def take {a : Type} (n: Nat) (xs : List a): List a :=
+  match n, xs with
+  | 0, _ | _, [] => []
+  | _, x :: xss => x :: take (n-1) xss
+
+#eval take 20 [1,2,5,3,6,8,3,74,47]
+#eval take 5 [1,2,5,3,6,8,3,74,47]
+
+
+def distribute {a b y : Type} (input : a × (b ⊕ y)) : (a × b) ⊕ (a × y) := .inr (a,b)
