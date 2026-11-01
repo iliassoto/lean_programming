@@ -248,5 +248,8 @@ def take {a : Type} (n: Nat) (xs : List a): List a :=
 #eval take 20 [1,2,5,3,6,8,3,74,47]
 #eval take 5 [1,2,5,3,6,8,3,74,47]
 
-
-def distribute {a b y : Type} (input : a × (b ⊕ y)) : (a × b) ⊕ (a × y) := .inr (a,b)
+--write a function that distributes products over sums
+def distribute {a b y : Type} (pair : a × (b ⊕ y)) : (a × b) ⊕ (a × y) :=
+  match pair.snd with
+  | Sum.inr be => Sum.inr (pair.fst, be)
+  | Sum.inl ypsilon => Sum.inl (pair.fst, ypsilon)
