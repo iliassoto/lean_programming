@@ -387,3 +387,8 @@ def Inline.string? (inline : Inline) : Option String :=
 def Inline.string2? (inline : Inline) : Option String :=
   if let Inline.string s := inline then some s
   else none
+
+
+--String interpolation
+#eval s!"three fives is {NewNamespace.triple 5}"
+#check s!"three fives is {NewNamespace.triple}" --Don't pass a function to the String interpolation!
