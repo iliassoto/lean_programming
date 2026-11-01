@@ -159,6 +159,41 @@ match xs with
 #eval listLenght [2,3,45]
 #eval [1,2,34].length --already part of the standard library
 
+
+--In some cases, the compiler can automatically see the implicit parameters:
+def listLength2 (xs: List α): Nat :=
+  match xs with
+  | [] => 0
+  | _ :: ys => 1 + (listLength2 ys)
+
+--Even easier: if we're pattern matching directly on the arguments provided, we
+--don't need the match with keyword. Note how we have to rewrite the definition so that
+-- the return type is a function
+def listLength3: List α -> Nat
+  | [] => 0
+  | _ :: ys => 1 + (listLength3 ys)
+
+def drop1 : Nat → List α → List α
+  | Nat.zero, xs => xs
+  | _, [] => []
+  | Nat.succ n, _ :: xs => drop1 n xs
+
+
+--Named arguments and patterns can also be used in the same definition
+def fromOption (default : α) : Option α → α
+  | none => default
+  | some x => x
+
+#eval fromOption 5 (some 3) --3
+#eval fromOption 5 none --5
+#check fromOption
+
+--natural numbers can be matched using literal numbers and +.
+def even : Nat → Bool
+  | 0 => true
+  | n + 1 => not (even n)
+
+
 -- Further built-in datatypes (besides List):
 
 --Option is used as follows.
@@ -253,3 +288,102 @@ def distribute {a b y : Type} (pair : a × (b ⊕ y)) : (a × b) ⊕ (a × y) :=
   match pair.snd with
   | Sum.inr be => Sum.inr (pair.fst, be)
   | Sum.inl ypsilon => Sum.inl (pair.fst, ypsilon)
+
+
+/-
+CHARACTERS, STRINGS and SLICES
+- characters are unicode
+- Strings are an array of UTF-8 bytes paired with a cached character count. This means
+that removing  a single character from a String can result in copying the remaining
+characters to a new String.
+- Slices are (sub)parts of the string and have the type String.Slice. They contain a reference
+to a string along with the start and end poisitions of the slice. Operations such as dropping
+prefixes of strings return slices rahter than allocating new strings, and large parts of the string API
+are also implemented for slices.
+
+
+- Many String functions similar to other Programming languages
+-/
+
+#eval "Hello " ++ "World" --concat
+#eval "addchar".push '!' --add character to String
+
+def tortoise := ("small tortoiseshell".drop 6).dropEnd 5 --Has type String.Slice
+#check tortoise.copy -- Has type String --> Creates a String from a Slice.
+
+--String methods are overloaded
+#eval "red admiral".dropEndWhile 'l' --"red admira"
+#eval "red admiral".dropEndWhile Char.isAlpha --"red "
+
+
+--ADDITIONAL SYNTAX
+/-Local Definitions:
+Instead of doing:
+-/
+def unzip1 : List (α × β) → List α × List β
+  | [] => ([], [])
+  | (x, y) :: xys =>
+    (x :: (unzip1 xys).fst, y :: (unzip1 xys).snd) --Problem: Each entry does two (non-tail) recursive calls.
+
+def unzip : List (α × β) → List α × List β
+  | [] => ([], [])
+  | (x, y) :: xys =>
+    let unzipped : List α × List β := unzip xys --Recursive call is named.
+    (x :: unzipped.fst, y :: unzipped.snd) --The expression in which the local definition is avaiaible (body)must be on a new line
+
+
+--Recursive let definitions must be explicitly named (unlike def).
+def reverse (xs : List α) : List α :=
+  let rec helper : List α → List α → List α
+    | [], soFar => soFar
+    | y :: ys, soFar => helper ys (y :: soFar)
+  helper xs []
+
+
+-- Anonymous functions are written with the fun keyword:
+#check fun x => x + 1 -- Nat -> Nat
+#check fun (x: Int) => x + 1 -- Int -> Int
+
+
+
+/-
+Each name in Lean occurs in a namespace, which is a collection of names.
+Names are placed in namespaces using a dot "." so List.map is the name "map"
+in the "List" namespace. Names in different namespaces do not conlfic with each other,
+even if they are otherwise identical.
+
+Names can be direclty defined within a namespace:
+-/
+
+def Nat.double (x: Nat) := x + x --we can add functions to predefined namespaces!
+#eval 4.double --doesn't work
+#eval (4 : Nat).double --help the compiler
+#eval Nat.double 4
+
+
+--create a new Namespace (without a type!)
+namespace NewNamespace
+def triple (x : Nat) : Nat := 3 * x
+def quadruple (x : Nat) : Nat := 2 * x + 2 * x
+end NewNamespace
+
+#eval NewNamespace.triple 5 --15
+
+
+--if let is syntactic sugar for Sum types:
+inductive Inline : Type where
+  | lineBreak
+  | string : String → Inline
+  | emph : Inline → Inline
+  | strong : Inline → Inline
+
+--a function that recognizes string elements and extracts their contents can be written:
+def Inline.string? (inline : Inline) : Option String :=
+  match inline with
+  | Inline.string s => some s
+  | _ => none
+
+--An alternative way of writing this function's body uses if together with let:
+def Inline.string2? (inline : Inline) : Option String :=
+  if let Inline.string s := inline then some s
+  else none
