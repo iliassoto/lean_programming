@@ -1,0 +1,1 @@
+lean --run HelloWorld.lean # invokes main() function
