@@ -6,5 +6,5 @@ defaultTargets = ["lean_programming"]
 name = "LeanProgramming"
 
 [[lean_exe]]
-name = "lean_programming"
-root = "Main"
+name = "feline"
+root = "leanProgramming.book.Feline"
