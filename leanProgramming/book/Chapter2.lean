@@ -55,4 +55,18 @@ def main : IO Unit := do
   englishGreeting --action is executed
 
 
---see feline code
+--see feline code...
+
+/-
+Syntactic sugar: If the IO action is used directly after only once, we can also enclose it:
+-/
+
+--instead of
+def write1 : IO Unit := do
+  let console_out <- IO.getStdout
+  console_out.putStrLn "Hello World"
+
+
+--instead of
+def write2 : IO Unit := do
+  (<- IO.getStdout).putStrLn "Hello World"
