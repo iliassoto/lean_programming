@@ -159,6 +159,10 @@ match xs with
 #eval listLenght [2,3,45]
 #eval [1,2,34].length --already part of the standard library
 
+def myOtherList : List String := ["hello", "how", "are", "you"]
+
+def you := myOtherList[3]
+
 
 --In some cases, the compiler can automatically see the implicit parameters:
 def listLength2 (xs: List α): Nat :=
