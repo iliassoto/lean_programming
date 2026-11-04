@@ -41,8 +41,6 @@ class Plus (α : Type) where
 instance : Plus Nat where --we're telling the compiler that Plus Nat is now a type (has now been implemented)
     plus := Nat.add --Each method has to be assigned.
 
-#eval Plus.plus 5 3
-
 -- we now implement the type class for our Positive numbers Type Pos:
 
 def Pos.plus : Pos -> Pos -> Pos
@@ -52,4 +50,6 @@ def Pos.plus : Pos -> Pos -> Pos
 instance : Plus Pos where
     plus := Pos.plus
 
+-- Method is now overloaded!
 #eval Plus.plus three three
+#eval Plus.plus 5 3
