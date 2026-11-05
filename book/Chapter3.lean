@@ -53,3 +53,19 @@ instance : Plus Pos where
 -- Method is now overloaded!
 #eval Plus.plus three three
 #eval Plus.plus 5 3
+
+/-
+One built-in type class is called ToString. Instances of ToString must implement one
+method (namely "toString"). The method is used by other methods such as IO.println.
+-/
+
+def posToString (atTop : Bool) (p : Pos) : String :=
+  let paren s := if atTop then s else "(" ++ s ++ ")" --defines a function on the fly (local function paren)
+  match p with
+  | Pos.one => "Pos.one"
+  | Pos.succ n => paren s!"Pos.succ {posToString false n}"
+
+instance : ToString Pos where
+    toString := posToString true
+
+--Alternative: convert first the instance to a Natural number
